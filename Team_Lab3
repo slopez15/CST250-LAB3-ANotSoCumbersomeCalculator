@@ -1,0 +1,230 @@
+# main source file
+
+.org 0x10000000
+
+# $t0 - the end resulting value
+# $t1 - user input(1)
+# $t2 - used for UART adjustments
+# $t3 - operand1
+# $t4 - operand2
+# $t5 -  
+# $t6 - 
+# $t7 - 
+# $t8 - '='
+# $t9 - 
+
+li $s0, 0xf0000000 	# UART address, use offsets as needed
+li $sp, 0x10fffffc 	# Stack Pointer
+
+ori $t8, $0, 0x3d 	# make $t8 '='
+
+############################### TESTING INPUT LOOP (IRRELEVANT TO PROJECT FUNCTIONALITY) ###############################
+#main_loop:
+
+#lw $t0, 8($s0)	#load from receive register
+#sw $t0, 12($s0) 	#send to send register
+
+#li $t9, 0b01
+#sw $t9, 0($s0)
+
+#j main_loop
+#nop
+
+#li $t0, 0b10 	# clear command register status
+#sw $t0, 0($s0)	# send to 'command' 
+
+
+############################################# User Input #####################################
+#1st INPUT									#
+input_1:									#
+
+lw $t1, 8($s0) 	# Load byte to receive register				#
+									#
+#Check:	||||   0x30   <   byte   <   0x39   ||||    [ascii values]			#
+									#
+#Check  ||| 0x30 < byte							#
+ori $t2, $0 0x30 		#0x30 ||| '0'					#	
+slt $t2 , $t1 , $t2 		# if  ||| $t1 < $t2 (1:0)				#
+bne $t2, $zero, NaN		#Jump ||| if 'True'					#
+nop									#
+									#
+#Check  |||  byte < 0x39							#
+ori $t2, ,$0 0x3a		#0x3a ||| ':' since <= is not valid to compare to 9		#
+slt $t2 , $t1 , $t2		# if  |||  $t1 <$t2 (1:0)				#
+beq $t2, $zero, NaN 		#Jump |||  'False'		 			#
+nop									#
+									#
+#Input is  |||  A Valid Number							#
+									#
+ori $t2, $0, 0x30								#	
+subu $t1, $t1, $t2		#Convert  ||| UserInput number to Hex Representation 	#
+ori $t2, $0, 0x10								#	
+mullo $t0, $t0, $t2		#Multiply ||| Ending Result X 10			#	
+addu $t0, $t0, $t1		#Add	||| Ending Result + Input			#			
+
+ori $t2, $0, 0x2								#
+sw $t2, 0($s0)		#Clears ||| Last Used number in 'Receive Register/Buffer'	# 
+									#
+j input_1			#JUMP ||| to get next input				#	
+nop									#
+									#
+
+#push $t1			#Push ||| Push onto					#
+#figure how to combine 'x' amount of numbers up to any NaN				#
+									#
+# NOT SURE WHAT BELOW COMMENT IS SAYING						#
+#inside update num should have j comparisons to check next character/byte		#
+									#
+#END INPUT									#
+############################################# End User Input #################################
+
+NaN:
+
+#Check	||| if user input  ==   [0x2a , 0x2b , 0x2d , 0x2f, 0x6e] = [*, +, -, /, n] 
+#Individual Method |||  1a)Pop twice 1b) Perform operation 1c) Push onto stack	
+
+ori $t2, $0, 0x2a 		#operator 0x2a ‘*’
+beq $t1, $t2, mult 		#multiply
+nop
+
+ori $t2, $0, 0x2 		#Clear	||| To clear Command Register
+sw $t2, 0($s0) 		#Send	||| To UART Register
+
+li $t2, 0x2b 		#operator 0x2b ‘+’
+beq $t1, $t2, addt		#addition
+nop
+
+ori $t2, $0, 0x2 		#Clear	||| To clear Command Register
+sw $t2, 0($s0) 		#Send	||| To UART Register
+
+li $t2, 0x2d 		#operator 0x2d ‘-’
+beq $t1, $t2, subt 		#subtraction
+nop
+
+ori $t2, $0 0x2 		#Clear	||| To clear Command Register
+sw $t2, 0($s0) 		#Send	||| To UART Register
+
+li $t2, 0x2f 		#operator 0x2f ‘/’
+beq $t1, $t2, divWorks	#Division
+nop
+
+ori $t2, $0, 0x2 		#Clear	||| To clear Command Register
+sw $t2, 0($s0) 		#Send	||| To UART Register
+
+li $t2, 0x20 		#operator 0x20 ‘_’<=space
+beq $t1, $t2, delimiter 	#in meth() pop 2 vals, do operation, push result #########FIX LATER? Define Purpose of space?(carlos' notes)
+nop
+
+#ori $t2, $0, 0x2 		#Clear	||| To clear Command Register
+#sw $t2, 0($s0) 		#Send	||| To UART Register
+
+li $t2, 0x6e 		#operator 0x6e ‘n’
+beq $t1, $t2, negative 	#in meth() pop 2 vals, do operation, push result
+nop
+
+ori $t2, $0, 0x2 		#Clear	||| To clear Command Register
+sw $t2, 0($s0) 		#Send	||| To UART Register
+
+li $t2, 0x3d 		#operator 0x3d ‘=’
+beq $t1, $t2, equals 	#Display		||| Result to UART
+nop
+
+ori $t2, $0, 0x2 		#Clear	||| To clear Command Register
+sw $t2, 0($s0) 		#Send	||| To UART Register
+
+j input_1
+nop
+
+#methods below
+
+############################### Multiply ############################### 
+mult:
+pop $t6
+pop $t7
+mullo $t6, $t7, $t6
+push $t6
+j input_1
+nop
+############################### Division ################################ 
+divWorks:
+pop $t6
+pop $t7
+move $t6, $a1
+move $t7, $a0
+call divide
+push $v0
+nop
+############################### Addition ################################ 
+addt:
+pop $t6
+pop $t7
+addu $t6, $t7, $t6
+push $t6
+nop
+j input_1
+nop
+############################### Subtraction ############################# 
+subt:
+pop $t6
+pop $t7
+subu $t6, $t7,$t6
+push $t6
+j input_1
+nop
+
+############################### Delimeter ###############################
+delimiter:
+push $t0		#push current onto stack
+j input_1
+nop
+
+############################### Negative ################################
+negative:
+subu $t6, $0, $t6
+push $t6
+j input_1
+nop
+
+############################### Equals ###############$$################
+equals:
+
+sw $t0, 12($s0)		#Send 	||| Final Result to 'Send Buffer/Register'
+ori $t2, $0, 0x1		#Assign	||| Value of '1'
+sw $t2, 0($s0)		#Send 	||| to Command Register to display.
+j input_1
+nop
+
+
+
+no_reset:
+
+
+
+#START DIVIDE
+divide:
+# expects dividend in $a0
+# expects divisor in $a1
+# stores quotient in $v0
+# stores remainder in $v1
+# will overwrite temporary registers
+move $t0 , $a0	# move values to temp register
+move $t1 , $a1	# move values to temp register
+ori $t4 , $zero , 0x0	# load count value
+ori $t9 , $zero , 0x1
+
+div:
+slt $t3 , $t0 , $t1	# divide by subtraction
+beq $t9 , $t3 , ret	# jump if remainder is less than quotient
+nop
+	# nop after jump
+subu $t0 , $t0 , $t1	# subtract
+addu $t4 , $t4 , $t9	# increment counter
+j div	# jump to top again
+nop	# nop after jump
+
+ret:
+move $v0 , $t4	# move quotient to $v0
+move $v1 , $t0	# move remainder to $v1
+
+return	# returns from divide call
+# END DIVIDE
