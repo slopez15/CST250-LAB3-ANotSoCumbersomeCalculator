@@ -1,0 +1,14 @@
+Break Points
+Afer Every Method
+Explain first run
+
+Coverage
+Saul - comparisons, reset
+Jacob -display, division 
+Carlos -input
+Tony - MathLabels
+Quinten - 
+
+
+
+
