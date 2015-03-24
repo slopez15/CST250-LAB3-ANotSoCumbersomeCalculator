@@ -1,0 +1,13 @@
+Things to be done for further uses:
+    rework divide and display to properly handle negative numbers
+    error handling
+    error handling
+    error handling
+        more operators then numbers
+        more numbers then expected
+        divide by 0
+    handle both types of overflow
+        input larger than 32bits(actually signed)
+        result larger than 32bits(actually signed)
+    allow user to enter 0
+    
