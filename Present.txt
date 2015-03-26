@@ -4,7 +4,7 @@ Explain first run
 
 Coverage
 Saul - comparisons, reset
-Jacob -display, division 
+Jacob -division 
 Carlos -input
 Tony - MathLabels
-Quinten - 
+Quinten - display
